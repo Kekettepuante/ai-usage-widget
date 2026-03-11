@@ -257,6 +257,10 @@ class UsageDetailWindow(Gtk.Window):
 
         if usage:
             self._add_usage_blocks(vbox, usage)
+        elif status is ProviderState.RATE_LIMITED:
+            error_label = Gtk.Label(label="Rate limited. Retrying automatically later.")
+            error_label.get_style_context().add_class("metric-sub")
+            vbox.pack_start(error_label, False, False, 4)
         elif status is not ProviderState.NO_TOKEN:
             error_label = Gtk.Label(label="Unable to fetch usage data.")
             error_label.get_style_context().add_class("status-err")

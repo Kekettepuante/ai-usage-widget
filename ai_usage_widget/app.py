@@ -14,6 +14,7 @@ from .constants import APP_NAME
 from .markup import overlay_display_from_usage, overlay_error_display
 from .models import ClaudeSubscriptionInfo, ProviderState, ProviderUsage
 from .notifications import NotificationTracker
+from .polling import resolve_rate_limited, resolve_success
 from .providers import (
     RateLimitError,
     fetch_claude_usage,
@@ -167,16 +168,12 @@ class UsageApp:
 
             raw = fetch_claude_usage(self.claude_token)
             normalized = normalize_claude_usage(raw)
-            if normalized is None:
-                self.claude_status = ProviderState.ERROR
-                self.claude_usage = None
-                return
-            self.claude_usage = normalized
-            self.claude_status = ProviderState.CONNECTED
+            self.claude_usage, self.claude_status = resolve_success(normalized)
         except RateLimitError:
             print("[ai-usage] Claude rate limited, backing off 10 min", file=sys.stderr)
-            self.claude_status = ProviderState.RATE_LIMITED
-            self.claude_usage = None
+            self.claude_usage, self.claude_status = resolve_rate_limited(
+                self.claude_usage
+            )
         except Exception as exc:
             print(f"[ai-usage] Claude poll error: {exc}", file=sys.stderr)
             self.claude_status = ProviderState.ERROR
@@ -195,16 +192,12 @@ class UsageApp:
 
             raw = fetch_openai_usage(self.openai_token, self.openai_account_id)
             normalized = normalize_openai_usage(raw)
-            if normalized is None:
-                self.openai_status = ProviderState.ERROR
-                self.openai_usage = None
-                return
-            self.openai_usage = normalized
-            self.openai_status = ProviderState.CONNECTED
+            self.openai_usage, self.openai_status = resolve_success(normalized)
         except RateLimitError:
             print("[ai-usage] OpenAI rate limited, backing off 10 min", file=sys.stderr)
-            self.openai_status = ProviderState.RATE_LIMITED
-            self.openai_usage = None
+            self.openai_usage, self.openai_status = resolve_rate_limited(
+                self.openai_usage
+            )
         except Exception as exc:
             print(f"[ai-usage] OpenAI poll error: {exc}", file=sys.stderr)
             self.openai_status = ProviderState.ERROR
@@ -224,17 +217,11 @@ class UsageApp:
         self.last_updated = datetime.now().strftime("%H:%M:%S")
 
         claude_overlay = overlay_display_from_usage(self.claude_usage, self.config)
-        if claude_overlay is None and self.claude_status in {
-            ProviderState.ERROR,
-            ProviderState.RATE_LIMITED,
-        }:
+        if claude_overlay is None and self.claude_status is ProviderState.ERROR:
             claude_overlay = overlay_error_display()
 
         openai_overlay = overlay_display_from_usage(self.openai_usage, self.config)
-        if openai_overlay is None and self.openai_status in {
-            ProviderState.ERROR,
-            ProviderState.RATE_LIMITED,
-        }:
+        if openai_overlay is None and self.openai_status is ProviderState.ERROR:
             openai_overlay = overlay_error_display()
 
         for overlay in self.overlays:

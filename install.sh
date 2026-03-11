@@ -63,10 +63,11 @@ mkdir -p "$HOME/.local/bin"
 cat > "$HOME/.local/bin/ai-widget-start" <<'EOFSTART'
 #!/bin/bash
 SCRIPT="$HOME/.local/share/ai-usage-widget/ai_usage_widget.py"
+PATTERN="$HOME/.local/share/ai-usage-widget/[a]i_usage_widget.py"
 LOG="/tmp/ai-usage-widget.log"
 
-if pgrep -f "ai_usage_widget.py" >/dev/null 2>&1; then
-    echo "Already running ($(pgrep -f ai_usage_widget.py))"
+if pgrep -f "$PATTERN" >/dev/null 2>&1; then
+    echo "Already running ($(pgrep -f "$PATTERN"))"
     exit 0
 fi
 
@@ -80,7 +81,7 @@ nohup env -i \
   /usr/bin/python3 "$SCRIPT" > "$LOG" 2>&1 </dev/null &
 
 sleep 1
-if pgrep -f "ai_usage_widget.py" >/dev/null 2>&1; then
+if pgrep -f "$PATTERN" >/dev/null 2>&1; then
     echo "Widget started"
 else
     echo "Failed to start. Check $LOG"
@@ -90,7 +91,7 @@ EOFSTART
 
 cat > "$HOME/.local/bin/ai-widget-stop" <<'EOFSTOP'
 #!/bin/bash
-if pkill -f ai_usage_widget.py 2>/dev/null; then
+if pkill -f "$HOME/.local/share/ai-usage-widget/[a]i_usage_widget.py" 2>/dev/null; then
     echo "Widget stopped"
 else
     echo "Not running"
