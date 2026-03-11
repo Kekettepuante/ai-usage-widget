@@ -71,7 +71,7 @@ if pgrep -f "$PATTERN" >/dev/null 2>&1; then
     exit 0
 fi
 
-nohup env -i \
+setsid env -i \
   HOME="$HOME" \
   DISPLAY="${DISPLAY:-}" \
   WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-}" \
