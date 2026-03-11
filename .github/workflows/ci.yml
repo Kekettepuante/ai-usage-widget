@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dev dependencies
+        run: python -m pip install -e .[dev]
+      - name: Lint
+        run: python -m ruff check .
+      - name: Format check
+        run: python -m ruff format --check .
+      - name: Unit tests
+        run: python -m pytest -q
+      - name: Syntax checks
+        run: |
+          python -m compileall -q ai_usage_widget ai_usage_widget.py
+          bash -n install.sh
+          bash -n uninstall.sh
+          bash -n upgrade.sh
+          bash -n validate.sh
